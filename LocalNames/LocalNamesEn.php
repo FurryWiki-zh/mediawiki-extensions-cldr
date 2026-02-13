@@ -1074,12 +1074,12 @@ $languageNames = [
 	'zgh-latn' => 'Standard Moroccan Tamazight (Latin script)',
 	'zh-classical' => 'Literary Chinese',
 	'zh-cn' => 'Chinese (China)',
-	'zh-hk' => 'Chinese (Hong Kong)',
+	'zh-hk' => 'Chinese (Hong Kong SAR China)',
 	'zh-min-nan' => 'Minnan',
-	'zh-mo' => 'Chinese (Macau)',
+	'zh-mo' => 'Chinese (Macau SAR China)',
 	'zh-my' => 'Chinese (Malaysia)',
 	'zh-sg' => 'Chinese (Singapore)',
-	'zh-tw' => 'Chinese (Taiwan)',
+	'zh-tw' => 'Chinese (Taiwan, China)',
 	# language redirect
 	'zh-yue' => 'Cantonese',
 	# Requested for translatewiki and Wikidata: T373931
