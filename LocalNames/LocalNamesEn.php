@@ -315,6 +315,8 @@ $languageNames = [
 	# used by Wikidata, T263946
 	'fmp' => 'Fe\'Fe\'',
 	'fos' => 'Siraya',
+	# used by Wikidata, T417280
+	'fr-be' => 'Belgian French',
 	'frk' => 'Frankish',
 	'fsl' => 'French Sign Language',
 	# used by Wikidata, T314935
@@ -448,6 +450,7 @@ $languageNames = [
 	'jdt-cyrl' => 'Judeo-Tat (Cyrillic script)',
 	# Used by translatewiki
 	'jje' => 'Jeju',
+	'juk' => 'Wapan',
 	# Add to core, T409393
 	'jv-java' => 'Javanese (Javanese script)',
 	'kag' => 'Kajaman',
@@ -459,6 +462,8 @@ $languageNames = [
 	'kbp' => 'Kabiye',
 	# Used by translatewiki
 	'kck' => 'Kalanga',
+	# CLDR uses the autonym in the English name
+	'kea' => 'Cape Verdean Creole',
 	# used by Wikidata, T263946
 	'ker' => 'Kera',
 	# used by Wikidata, T368823
@@ -531,6 +536,9 @@ $languageNames = [
 	'ldn' => 'Láadan',
 	# used by Wikidata, T263946
 	'lem' => 'Nomaande',
+	# used by Wikidata, T417287
+	'li-be' => 'Belgian Limburgish',
+	'li-nl' => 'Dutch Limburgish',
 	# used by Wikidata, T254968
 	'lij-mc' => 'Monégasque',
 	# Requested for translatewiki: T383038
@@ -743,6 +751,7 @@ $languageNames = [
 	'pt-ao1990' => 'Portuguese (1990 Orthographic Agreement)',
 	'pt-colb1945' => 'Portuguese (1945 Orthographic Agreement)',
 	'pwn' => 'Paiwan',
+	'pwo' => 'Western Pwo',
 	'pyu' => 'Puyuma',
 	# Used by translatewiki
 	'qwh' => 'Huaylas Ancash Quechua',
@@ -951,7 +960,7 @@ $languageNames = [
 	'trp' => 'Kokborok',
 	'tsg' => 'Tausug',
 	# T380964
-	'tsu' => 'Tsou ',
+	'tsu' => 'Tsou',
 	'tt-cyrl' => 'Tatar (Cyrillic script)',
 	'tt-latn' => 'Tatar (Latin script)',
 	'ttj' => 'Tooro',

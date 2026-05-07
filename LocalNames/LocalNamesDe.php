@@ -144,6 +144,8 @@ $languageNames = [
 	'es-mx' => 'Mexikanisches Spanisch',
 	'ett' => 'Etruskisch',
 	'fkv' => 'Kvenisch',
+	# used by Wikidata, T417280
+	'fr-be' => 'Belgisches Französisch',
 	'fr-ca' => 'Kanadisches Französisch',
 	'fr-ch' => 'Schweizer Französisch',
 	# used by Wikidata, T314935
@@ -254,6 +256,9 @@ $languageNames = [
 	'lbe' => 'Lakisch',
 	# used by Wikidata, T234761
 	'lcm' => 'Tungag',
+	# used by Wikidata, T417287
+	'li-be' => 'Belgisches Limburgisch',
+	'li-nl' => 'Niederländisches Limburgisch',
 	# used by Wikidata, T254968
 	'lij-mc' => 'Monegassisch',
 	'lki' => 'Leki',

@@ -15,6 +15,7 @@ $languageNames = [
 	'de-1901' => 'allemand (orthographe traditionnelle)',
 	'eo-hsistemo' => 'espéranto (orthographe du système H)',
 	'eo-xsistemo' => 'espéranto (orthographe du système X)',
+	'fr-be' => 'français belge',
 	'gcr' => 'créole guyanais',
 		# used by Wikidata, T262922
 	'gsg' => 'langue des signes allemande',
@@ -27,6 +28,8 @@ $languageNames = [
 	'ja-hira' => 'japonais (écriture hiragana)',
 	'ja-hrkt' => 'japonais (écriture kana)',
 	'ja-kana' => 'japonais (écriture katakana)',
+		# T408340
+	'ko-kp' => 'coréen (Corée du Nord)',
 	'ksy-beng' => 'kharia thar (écriture bengalaise)',
 	'kyw-beng' => 'kurmali (écriture bengalaise)',
 	'kyw-deva' => 'kurmali (écriture devanagari)',
