@@ -12,6 +12,7 @@
  */
 
 use MediaWiki\Extension\CLDR\CLDRParser;
+use MediaWiki\Extension\CLDR\PhpFileWriter;
 use MediaWiki\MediaWikiServices;
 
 // Standard boilerplate to define $IP
@@ -30,16 +31,16 @@ class CLDRRebuild extends Maintenance {
 		$this->addDescription( 'Extract data from CLDR XML' );
 		$this->addOption(
 			'datadir', 'Directory containing CLDR data. Default is core/common/main',
-			/* required */ false,
-			/* param */ true
+			false,
+			true
 		);
 		$this->addOption(
 			'outputdir', 'Output directory. Default is current directory',
-			/* required */ false,
-			/* param */ true
+			false,
+			true
 		);
 
-		$this->requireExtension( 'CLDR' );
+		$this->requireExtension( 'cldr' );
 	}
 
 	public function execute() {
@@ -54,16 +55,22 @@ class CLDRRebuild extends Maintenance {
 
 		$langNameUtils = MediaWikiServices::getInstance()->getLanguageNameUtils();
 
+		$p = new CLDRParser();
+		$writer = new PhpFileWriter();
+
 		// Get an array of all MediaWiki languages ( $wgLanguageNames + $wgExtraLanguageNames )
 		$languages = $langNameUtils->getLanguageNames();
-		# hack to get Konkani, until CLDR renames it from 'kok' to 'gom-deva' (T347625)
+		// hack to get Konkani, until CLDR renames it from 'kok' to 'gom-deva' (T347625)
 		$languages['kok'] = 'Foo';
-		# hack to get pt-pt too
+		// T378214
+		$languages['kok_Latn'] = 'Foo';
+		// hack to get pt-pt too
 		$languages['pt-pt'] = 'Foo';
 		// hack to get the correct script for mni (T313883)
 		$languages['mni-mtei'] = 'Foo';
 		ksort( $languages );
 
+		$availableCodes = [];
 		foreach ( $languages as $code => $name ) {
 			// Construct the correct name for the input file
 			$codeParts = explode( '-', $code );
@@ -93,72 +100,97 @@ class CLDRRebuild extends Maintenance {
 
 			// If the file exists, parse it, otherwise display an error
 			if ( file_exists( $input ) ) {
-				$outputFileName = $langNameUtils->getFileName(
-					'CldrNames',
-					$this->getRealCode( $code ),
-					'.php'
+				$mwCode = $this->getRealCode( $code );
+				if ( !$mwCode ) {
+					continue;
+				}
+				$outputFileName = $langNameUtils->getFileName( 'CldrMain', $mwCode );
+
+				$res = $writer->savephp(
+					$p->parseMain( $input ),
+					"$OUTPUT/CldrMain/$outputFileName"
 				);
-				$p = new CLDRParser();
-				$p->parse( $input, "$OUTPUT/CldrNames/$outputFileName" );
+
+				// If savephp didn't save a PHP file, we don't want to register it as an available code
+				if ( !$res ) {
+					$this->output( "File $input contained no useful data\n" );
+					continue;
+				}
+
+				$availableCodes[] = $mwCode;
 			} else {
 				$this->output( "File $input not found\n" );
 			}
 		}
 
-		// Now parse out what we want form the supplemental file
+		$writer->savephp(
+			[ 'availableCodes' => array_values( array_unique( $availableCodes ) ) ],
+			"$OUTPUT/CldrAvailableCodes.php"
+		);
+
+		// Now parse out what we want from the supplemental file
 		$this->output( "Parsing Supplemental Data...\n" );
 		// argh! If $DATA defaulted to something slightly more general in the
 		// CLDR dump, this wouldn't have to be this way.
 		$input = "$DATA/../supplemental/supplementalData.xml";
 		if ( file_exists( $input ) ) {
-			$p = new CLDRParser();
-			$p->parse_supplemental( $input, "$OUTPUT/CldrSupplemental/Supplemental.php" );
+			$writer->savephp(
+				$p->parseSupplemental( $input ),
+				"$OUTPUT/CldrSupplemental/Supplemental.php"
+			);
 		} else {
 			$this->output( "File $input not found\n" );
 		}
 		$this->output( "Done parsing supplemental data.\n" );
 
 		$this->output( "Parsing Currency Symbol Data...\n" );
-		$p = new CLDRParser();
-		$p->parse_currency_symbols( $DATA, "$OUTPUT/CldrCurrency/Symbols.php" );
+		$writer->savephp(
+			$p->parseCurrencySymbols( $DATA ),
+			"$OUTPUT/CldrCurrency/Symbols.php"
+		);
 		$this->output( "Done parsing currency symbols.\n" );
 	}
 
 	/**
-	 * Get the code for the MediaWiki localisation,
-	 * these are same as the fallback.
-	 *
-	 * @param string $code
-	 * @return string
+	 * Get the language code for the MediaWiki localisation, these are the same as the fallback.
 	 */
-	private function getRealCode( $code ) {
-		$realCode = $code;
-		if ( $code === 'kk' ) {
-			$realCode = 'kk-cyrl';
-		} elseif ( $code === 'az-arab' ) {
-			$realCode = 'azb';
-		} elseif ( $code === 'kok' ) {
-			// T347625
-			$realCode = 'gom-deva';
-		} elseif ( $code === 'ku' ) {
-			$realCode = 'ku-latn';
-		} elseif ( $code === 'mni-mtei' ) {
-			$realCode = 'mni';
-		} elseif ( $code === 'mni' ) {
-			$realCode = 'mni-beng';
-		} elseif ( $code === 'pt' ) {
-			$realCode = 'pt-br';
-		} elseif ( $code === 'pt-pt' ) {
-			$realCode = 'pt';
-		} elseif ( $code === 'sr' ) {
-			$realCode = 'sr-cyrl';
-		} elseif ( $code === 'tg' ) {
-			$realCode = 'tg-cyrl';
-		} elseif ( $code === 'zh' ) {
-			$realCode = 'zh-hans';
+	private function getRealCode( string $code ): ?string {
+		switch ( $code ) {
+			case 'az-arab':
+				return 'azb';
+			case 'kk':
+				return 'kk-cyrl';
+			case 'kok':
+				// T347625
+				return 'gom-deva';
+			case 'kok_Latn':
+				// T378214
+				return 'gom-latn';
+			case 'ku':
+				return 'ku-latn';
+			case 'mni':
+				return 'mni-beng';
+			case 'mni-mtei':
+				return 'mni';
+			case 'pt':
+				return 'pt-br';
+			case 'pt-br':
+				// Skip empty pt_BR.xml in favor of pt.xml (see above)
+				return null;
+			case 'pt-pt':
+				return 'pt';
+			case 'sr':
+				return 'sr-cyrl';
+			case 'tg':
+				return 'tg-cyrl';
+			case 'zh':
+				return 'zh-hans';
+			case 'zh-hans':
+				// Skip empty zh_Hans.xml in favor of zh.xml (see above)
+				return null;
+			default:
+				return $code;
 		}
-
-		return $realCode;
 	}
 }
 

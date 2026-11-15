@@ -1,13 +1,18 @@
 <?php
+
+use MediaWiki\Extension\CLDR\CountryNames;
+use MediaWiki\Extension\CLDR\CurrencyNames;
+use MediaWiki\Extension\CLDR\LanguageNames;
+
 /**
  * Basic Tests for CountryNames, CurrencyNames and LanguageNames
  * @author Scott Bassett
  * @copyright Copyright © 2022
  * @license GPL-2.0-or-later
  *
- * @covers \MediaWiki\Extension\CLDR\CountryNames
- * @covers \MediaWiki\Extension\CLDR\CurrencyNames
- * @covers \MediaWiki\Extension\CLDR\LanguageNames
+ * @covers MediaWiki\Extension\CLDR\CountryNames
+ * @covers MediaWiki\Extension\CLDR\CurrencyNames
+ * @covers MediaWiki\Extension\CLDR\LanguageNames
  */
 class NamesTest extends MediaWikiIntegrationTestCase {
 
@@ -18,7 +23,7 @@ class NamesTest extends MediaWikiIntegrationTestCase {
 	 * @param string $msg
 	 */
 	public function testCountryNames( $langCode, $expectedResult, $msg ) {
-		$actualResult = \MediaWiki\Extension\CLDR\CountryNames::getNames( $langCode );
+		$actualResult = CountryNames::getNames( $langCode );
 		$this->assertEquals(
 			$expectedResult,
 			$actualResult,
@@ -69,7 +74,7 @@ class NamesTest extends MediaWikiIntegrationTestCase {
 					'BY' => 'Belarus',
 					'BZ' => 'Belize',
 					'CA' => 'Canada',
-					'CC' => 'Cocos (Keeling) Islands',
+					'CC' => 'Cocos Islands',
 					'CD' => 'Congo - Kinshasa',
 					'CF' => 'Central African Republic',
 					'CG' => 'Congo - Brazzaville',
@@ -131,7 +136,7 @@ class NamesTest extends MediaWikiIntegrationTestCase {
 					'GU' => 'Guam',
 					'GW' => 'Guinea-Bissau',
 					'GY' => 'Guyana',
-					'HK' => 'Hong Kong',
+					'HK' => 'Hong Kong SAR China',
 					'HM' => 'Heard & McDonald Islands',
 					'HN' => 'Honduras',
 					'HR' => 'Croatia',
@@ -185,7 +190,7 @@ class NamesTest extends MediaWikiIntegrationTestCase {
 					'ML' => 'Mali',
 					'MM' => 'Myanmar',
 					'MN' => 'Mongolia',
-					'MO' => 'Macao',
+					'MO' => 'Macao SAR China',
 					'MP' => 'Northern Mariana Islands',
 					'MQ' => 'Martinique',
 					'MR' => 'Mauritania',
@@ -218,7 +223,7 @@ class NamesTest extends MediaWikiIntegrationTestCase {
 					'PK' => 'Pakistan',
 					'PL' => 'Poland',
 					'PM' => 'St. Pierre & Miquelon',
-					'PN' => 'Pitcairn Islands',
+					'PN' => 'Pitcairn',
 					'PR' => 'Puerto Rico',
 					'PS' => 'Palestine',
 					'PT' => 'Portugal',
@@ -267,7 +272,7 @@ class NamesTest extends MediaWikiIntegrationTestCase {
 					'TR' => 'Türkiye',
 					'TT' => 'Trinidad & Tobago',
 					'TV' => 'Tuvalu',
-					'TW' => 'Taiwan',
+					'TW' => 'Taiwan, China',
 					'TZ' => 'Tanzania',
 					'UA' => 'Ukraine',
 					'UG' => 'Uganda',
@@ -306,7 +311,7 @@ class NamesTest extends MediaWikiIntegrationTestCase {
 	 * @param string $msg
 	 */
 	public function testCurrencyNames( $langCode, $expectedResult, $msg ) {
-		$actualResult = \MediaWiki\Extension\CLDR\CurrencyNames::getNames( $langCode );
+		$actualResult = CurrencyNames::getNames( $langCode );
 		$this->assertEquals(
 			$expectedResult,
 			$actualResult,
@@ -321,27 +326,40 @@ class NamesTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @dataProvider providerLanguageNamesData
-	 * @param string $langCode
-	 * @param array $expectedResult
-	 * @param string $msg
+	 * @dataProvider provideLanguageNames
+	 * @param string $locale
+	 * @param string $languageToName
+	 * @param string $expectedName
+	 * @param int $fallbackMode
+	 * @param int $listMode
 	 */
-	public function testLanguageNames( $langCode, $expectedResult, $msg ) {
-		$actualResult = count(
-			\MediaWiki\Extension\CLDR\LanguageNames::getNames( $langCode ) );
-
-		$this->assertGreaterThan(
-			$expectedResult,
-			$actualResult,
-			$msg
-		);
+	public function testLanguageNames(
+		string $locale, string $languageToName, ?string $expectedName,
+		int $fallbackMode, int $listMode
+	) {
+		$actualResult = LanguageNames::getNames( $locale, $fallbackMode, $listMode );
+		$this->assertEquals( $expectedName, $actualResult[$languageToName] ?? null );
 	}
 
-	public static function providerLanguageNamesData() {
-		// TODO: the below is lazy, but there are inconsistencies across
-		// mw installs that make determining exact lang array values tricky.
+	public static function provideLanguageNames() {
 		return [
-			[ 'api.php', 0, 'Bad lang code still returns lang array greater than zero' ]
+			'Name exists but is overridden by LocalNames' => [
+				'be-tarask', 'be-tarask', 'беларуская (тарашкевіца)',
+				LanguageNames::FALLBACK_NATIVE, LanguageNames::LIST_MW
+			],
+			'LanguageFallback recovers from a missing but known language' => [
+				'kk', 'aa', 'афар тілі', LanguageNames::FALLBACK_NATIVE, LanguageNames::LIST_MW
+			],
+			'Name only appears in LocalNames and not CLDR' => [
+				// TODO: Can use LIST_MW once we deprecate MediaWiki 1.39 testing jobs
+				'en', 'aae', 'Arbëresh', LanguageNames::FALLBACK_NATIVE, LanguageNames::LIST_MW_AND_CLDR
+			],
+			'Name for a language in CLDR but unknown to MediaWiki is filtered out' => [
+				'en', 'en-nz', null, LanguageNames::FALLBACK_NATIVE, LanguageNames::LIST_MW
+			],
+			'Name for a language in CLDR but unknown to MediaWiki can be found' => [
+				'en', 'en-nz', 'New Zealand English', LanguageNames::FALLBACK_NATIVE, LanguageNames::LIST_MW_AND_CLDR
+			],
 		];
 	}
 }

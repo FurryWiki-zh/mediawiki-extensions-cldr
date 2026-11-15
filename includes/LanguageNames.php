@@ -4,6 +4,7 @@ namespace MediaWiki\Extension\CLDR;
 
 use InvalidArgumentException;
 use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 
 /**
@@ -20,23 +21,25 @@ class LanguageNames {
 	private static $cache = [];
 
 	/**
-	 * Missing entries fallback to native name
+	 * Missing entries fall back to the language's name for itself
 	 */
 	public const FALLBACK_NATIVE = 0;
 	/**
-	 * Missing entries fallback through the fallback chain
+	 * Missing entries are sought in the MediaWiki fallback chain
 	 */
 	public const FALLBACK_NORMAL = 1;
 	/**
-	 * Only names that have localisation in MediaWiki
+	 * Only include languages supported by core MediaWiki localisation.
+	 * Corresponds to LanguageNameUtils::SUPPORTED.
 	 */
 	public const LIST_MW_SUPPORTED = 0;
 	/**
-	 * All names that are in Names.php
+	 * Only include languages in LIST_MW_SUPPORTED, plus anything defined in wgExtraLanguageNames.
+	 * Corresponds to LanguageNameUtils::DEFINED.
 	 */
 	public const LIST_MW = 1;
 	/**
-	 * Combination of Names.php and what is in cldr
+	 * All languages in the CLDR data, including languages unknown to MediaWiki.
 	 */
 	public const LIST_MW_AND_CLDR = 2;
 
@@ -54,7 +57,14 @@ class LanguageNames {
 	) {
 		$xx = self::loadLanguage( $code );
 
-		$native = MediaWikiServices::getInstance()->getLanguageNameUtils()
+		$services = MediaWikiServices::getInstance();
+		$config = $services->getMainConfig();
+		if ( !$config->get( MainConfigNames::UsePigLatinVariant ) ) {
+			// Suppress Pig Latin unless explicitly enabled.
+			unset( $xx['en-x-piglatin'] );
+		}
+
+		$native = $services->getLanguageNameUtils()
 			->getLanguageNames(
 				LanguageNameUtils::AUTONYMS,
 				$list === self::LIST_MW_SUPPORTED ? LanguageNameUtils::SUPPORTED : LanguageNameUtils::DEFINED
@@ -66,7 +76,7 @@ class LanguageNames {
 			// Load missing language names from fallback languages
 			$fb = $xx;
 
-			$fallbacks = MediaWikiServices::getInstance()->getLanguageFallback()->getAll( $code );
+			$fallbacks = $services->getLanguageFallback()->getAll( $code );
 			foreach ( $fallbacks as $fallback ) {
 				// Overwrite the things in fallback with what we have already
 				$fb = array_merge( self::loadLanguage( $fallback ), $fb );
@@ -76,8 +86,8 @@ class LanguageNames {
 			$names = array_merge( $native, $fb );
 
 			/* As a last resort, try the native name in Names.php */
-			if ( !isset( $names[$code] ) && isset( $native[$code] ) ) {
-				$names[$code] = $native[$code];
+			if ( isset( $native[$code] ) ) {
+				$names[$code] ??= $native[$code];
 			}
 		} else {
 			throw new InvalidArgumentException( "Invalid value for 2:\$fallback in " . __METHOD__ );
@@ -118,7 +128,7 @@ class LanguageNames {
 
 		/* Load override for wrong or missing entries in cldr */
 		$override = __DIR__ . '/../LocalNames/' .
-			$langNameUtils->getFileName( 'LocalNames', $code, '.php' );
+			$langNameUtils->getFileName( 'LocalNames', $code );
 		if ( file_exists( $override ) ) {
 			$languageNames = false;
 			require $override;
@@ -128,8 +138,8 @@ class LanguageNames {
 			}
 		}
 
-		$filename = __DIR__ . '/../CldrNames/' .
-			$langNameUtils->getFileName( 'CldrNames', $code, '.php' );
+		$filename = __DIR__ . '/../CldrMain/' .
+			$langNameUtils->getFileName( 'CldrMain', $code );
 		if ( file_exists( $filename ) ) {
 			$languageNames = false;
 			require $filename;
@@ -140,6 +150,9 @@ class LanguageNames {
 		} else {
 			wfDebug( __METHOD__ . ": Unable to load language names for $filename\n" );
 		}
+
+		// remove falsy language names (LocalNames can override/unset CldrMain this way)
+		self::$cache[$code] = array_filter( self::$cache[$code] );
 
 		return self::$cache[$code];
 	}
